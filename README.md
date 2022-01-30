@@ -11,7 +11,7 @@
 
 ## WebClient
 
-- [NonBlocking Call](#)
+- [Non-Blocking Call](#)
 - WebClient.Builder instances are stateful
   - WebClient.Builder 자체는 싱글톤으로 구성되어있기 때문에, scope 를 메서드로 한정하고, 상태로 인한 동시성이슈가 발생하지 않도록 하려면 아래와 같은 방법을 사용
   - `WebClient.Builder other = builder.clone();`
