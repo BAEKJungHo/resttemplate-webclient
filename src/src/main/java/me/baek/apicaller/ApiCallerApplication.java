@@ -8,6 +8,8 @@ import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.util.StopWatch;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
 
@@ -15,7 +17,7 @@ import java.util.Arrays;
 public class ApiCallerApplication {
 
     @Autowired
-    RestTemplateBuilder restTemplateBuilder;
+    WebClient.Builder webClientBuilder;
 
     public static void main(String[] args) {
         SpringApplication.run(ApiCallerApplication.class, args);
@@ -27,19 +29,29 @@ public class ApiCallerApplication {
             StopWatch stopWatch = new StopWatch();
             stopWatch.start();
 
-            // Blocking Call 을 꼭 써야하나 ?
-            // 현재는 repo 호출이 끝날 때 까지, commit 호출을 하지 않음
-            // 두 API 호출은 서로 디펜던시가 없음
-            RestTemplate restTemplate = restTemplateBuilder.build();
-            GitHubRepository[] repositories = restTemplate.getForObject("https://api.github.com/users/baekjungho/repos", GitHubRepository[].class);
-            Arrays.stream(repositories).forEach(repo -> {
-                System.out.println("repo : " + repo.getUrl());
-            });
+            WebClient webClient = webClientBuilder.baseUrl("https://api.github.com").build();
 
-            GitHubCommit[] commits = restTemplate.getForObject("https://api.github.com/repos/baekjungho/TIL/commits", GitHubCommit[].class);
-            Arrays.stream(commits).forEach(commit -> {
-                System.out.println("commit : " + commit.getUrl());
-            });
+            // Mono 는 실제로 구독(Subscription) 을 하기 전에는 Flow 가 발생하지 않는다.
+            // Non-Blocking
+            Mono<GitHubRepository[]> repositoriesMono = webClient.get().uri("/users/baekjungho/repos")
+                    .retrieve()
+                    .bodyToMono(GitHubRepository[].class);
+
+            Mono<GitHubCommit[]> commitsMono = webClient.get().uri("/repos/baekjungho/TIL/commits")
+                    .retrieve()
+                    .bodyToMono(GitHubCommit[].class);
+
+            repositoriesMono.doOnSuccess(ra -> {
+                Arrays.stream(ra).forEach(r -> {
+                    System.out.println("repo: " + r.getUrl());
+                });
+            }).subscribe();
+
+            commitsMono.doOnSuccess(ca -> {
+                Arrays.stream(ca).forEach(c -> {
+                    System.out.println("commit: " + c.getSha());
+                });
+            }).subscribe();
 
             stopWatch.stop();
             System.out.println(stopWatch.prettyPrint());
