@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StopWatch;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
@@ -68,6 +69,26 @@ public class ApiCaller {
                 System.out.println("commit: " + c.getSha());
             });
         }).subscribe();
+
+        stopWatch.stop();
+        System.out.println(stopWatch.prettyPrint());
+    }
+
+    public void nonBlockingWithWebClientFlux() {
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+
+        WebClient webClient = webClientBuilder.baseUrl("https://api.github.com").build();
+
+        Flux<GitHubRepository> repositoriesFlux = webClient.get().uri("/users/baekjungho/repos")
+                .retrieve()
+                .bodyToFlux(GitHubRepository.class);
+        repositoriesFlux.subscribe(r -> System.out.println("repo: " + r.getUrl()));
+
+        Flux<GitHubCommit> commitsFlux = webClient.get().uri("/repos/baekjungho/TIL/commits")
+                .retrieve()
+                .bodyToFlux(GitHubCommit.class);
+        commitsFlux.subscribe(c -> System.out.println("commit: " + c.getSha()));
 
         stopWatch.stop();
         System.out.println(stopWatch.prettyPrint());
