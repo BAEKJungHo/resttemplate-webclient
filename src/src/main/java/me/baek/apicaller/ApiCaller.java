@@ -25,9 +25,6 @@ public class ApiCaller {
     RestTemplateResponseErrorHandler restTemplateResponseErrorHandler;
 
     public void blockingCallWithRestTemplate() {
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
-
         // Blocking Call 을 꼭 써야하나 ?
         // 현재는 repo 호출이 끝날 때 까지, commit 호출을 하지 않음
         // 두 API 호출은 서로 디펜던시가 없음
@@ -41,15 +38,9 @@ public class ApiCaller {
         Arrays.stream(commits).forEach(commit -> {
             System.out.println("commit : " + commit.getUrl());
         });
-
-        stopWatch.stop();
-        System.out.println(stopWatch.prettyPrint());
     }
 
     public void nonBlockingWithWebClientMono() {
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
-
         WebClient webClient = webClientBuilder.baseUrl("https://api.github.com").build();
 
         // Mono 는 실제로 구독(Subscription) 을 하기 전에는 Flow 가 발생하지 않는다.
@@ -73,15 +64,9 @@ public class ApiCaller {
                 System.out.println("commit: " + c.getSha());
             });
         }).subscribe();
-
-        stopWatch.stop();
-        System.out.println(stopWatch.prettyPrint());
     }
 
     public void nonBlockingWithWebClientFlux() {
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
-
         WebClient webClient = webClientBuilder.baseUrl("https://api.github.com").build();
 
         Flux<GitHubRepository> repositoriesFlux = webClient.get().uri("/users/baekjungho/repos")
@@ -93,8 +78,5 @@ public class ApiCaller {
                 .retrieve()
                 .bodyToFlux(GitHubCommit.class);
         commitsFlux.subscribe(c -> System.out.println("commit: " + c.getSha()));
-
-        stopWatch.stop();
-        System.out.println(stopWatch.prettyPrint());
     }
 }
